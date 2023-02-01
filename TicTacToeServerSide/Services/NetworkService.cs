@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -6,7 +7,6 @@ using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using TicTacToeServerSide.Help;
 
 namespace TicTacToeServerSide.Services
 {
@@ -18,15 +18,13 @@ namespace TicTacToeServerSide.Services
         private const int PORT = 27001;
         private static readonly byte[] buffer = new byte[BUFFER_SIZE];
         private static bool GameStart = false;
-        private static List<UserLogin> ULLIST { get; set; } = new List<UserLogin>();
         public static bool IsFirst { get; private set; } = false;
         public static char[,] Points = new char[3, 3] { { '1', '2', '3' }, { '4', '5', '6' }, { '7', '8', '9' } };
 
         public static void Start()
         {
             Console.Title = "Server";
-           
-                SetupServer();
+            SetupServer();
             Console.ReadLine();
             CloseAllSockets();
         }
@@ -206,32 +204,21 @@ namespace TicTacToeServerSide.Services
                 byte[] recBuf = new byte[received];
                 Array.Copy(buffer, recBuf, received);
                 string text = Encoding.ASCII.GetString(recBuf);
-                if (isok1 && !GameStart)
-                {
-                    isok1 = false;
-                    if (ULLIST.Count > 0)
-                    {
-                        GameStart = true;
-                    }
-                    Console.WriteLine("Dusdu buraya");
-                    var USer = JsonSerializer.Deserialize<UserLogin>(text);
-                    ULLIST.Add(USer);
-                    Console.BackgroundColor = ConsoleColor.DarkYellow;
-                    Console.WriteLine(USer.UserName);
-                    Console.BackgroundColor = ConsoleColor.Black;
-                    current.BeginReceive(buffer, 0, BUFFER_SIZE, SocketFlags.None, ReceiveCallback, current);
-                    return;
-                }
+                
                 if (!GameStart)
                 {
-                    current.BeginReceive(buffer, 0, BUFFER_SIZE, SocketFlags.None, ReceiveCallback, current);
-                    return;
+                    if (clientSockets.Count > 0) GameStart = true;
+                    else
+                    {
+                        current.BeginReceive(buffer, 0, BUFFER_SIZE, SocketFlags.None, ReceiveCallback, current);
+                        return;
+                    }
                 }
                 try
                 {
                     var no = text[0];
                     var symbol = text[1];
-                    Console.WriteLine("Budu: " + no + "||" + symbol);
+                    Console.WriteLine(no + "||" + symbol);
                     var number = Convert.ToInt32(no) - 49;
                     if (number >= 0 && number <= 2)
                         Points[0, number] = symbol;
